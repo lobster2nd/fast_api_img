@@ -3,6 +3,7 @@ import shutil
 from fastapi import APIRouter, File, UploadFile
 
 from api_v1.schemas import UploadImage
+from api_v1.utils import get_unique_filename,resize_image
 
 router = APIRouter(prefix="/images")
 
@@ -11,10 +12,16 @@ router = APIRouter(prefix="/images")
 async def upload_image(image: UploadFile = File(...)):
     """Загрузка изображения"""
 
-    os.makedirs('uploaded_images', exist_ok=True)
-    file_path = os.path.join('uploaded_images', image.filename)
+    img_dir = 'uploaded_images'
+    os.makedirs(img_dir, exist_ok=True)
 
-    with open(file_path, 'wb') as buffer:
-        shutil.copyfileobj(image.file, buffer)
+    img_name = get_unique_filename(image.filename)
+    img_path = os.path.join(img_dir, img_name)
 
-    return {'image': image.filename}
+    with open(img_path, 'wb') as origin:
+        shutil.copyfileobj(image.file, origin)
+
+    resize_image(img_path, 100, 100)
+    resize_image(img_path, 500, 500)
+
+    return {'message': 'ok'}
