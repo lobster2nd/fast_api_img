@@ -1,9 +1,13 @@
 import os
 import shutil
-from fastapi import APIRouter, File, UploadFile
+from datetime import datetime
 
-from api_v1.schemas import UploadImage
-from api_v1.utils import get_unique_filename,resize_image
+from fastapi import APIRouter, File, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api_v1.models import Image
+from api_v1.utils import get_unique_filename, resize_image
+from core.database import db_helper
 
 router = APIRouter(prefix="/images")
 
@@ -24,4 +28,18 @@ async def upload_image(image: UploadFile = File(...)):
     resize_image(img_path, 100, 100)
     resize_image(img_path, 500, 500)
 
-    return {'message': 'ok'}
+    session: AsyncSession = await db_helper.get_session()
+
+    new_image = Image(
+        title=image.filename,
+        path=img_path,
+        uploaded_at=datetime.now(),
+        resolution='100x100',
+        size=os.path.getsize(img_path)
+    )
+    async with session:
+        session.add(new_image)
+        await session.commit()
+        await session.refresh(new_image)
+
+    return new_image
