@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 
 from pydantic import BaseModel
 
@@ -7,7 +7,7 @@ class ImageResponse(BaseModel):
     id: int
     title: str
     path: str
-    uploaded_at: date
+    uploaded_at: datetime
     resolution: str
     size: int
 

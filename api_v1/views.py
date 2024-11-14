@@ -1,8 +1,10 @@
 import os
 import shutil
 from datetime import datetime
+from typing import List
 
 from fastapi import APIRouter, File, UploadFile, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_v1.models import Image
@@ -15,11 +17,12 @@ router = APIRouter(prefix="/images")
 
 
 @router.post("/upload/",
+             status_code=201,
              responses={
-                 200: {'model': ImageResponse},
+                 201: {'model': ImageResponse},
                  400: {'model': ErrorResponse}
              }
-)
+             )
 async def upload_image(image: UploadFile = File(...)):
     """Загрузка изображения"""
 
@@ -53,3 +56,25 @@ async def upload_image(image: UploadFile = File(...)):
         await session.refresh(new_image)
 
     return new_image
+
+
+@router.get("/all/", response_model=List[ImageResponse],
+            responses={
+                200: {'model': ImageResponse},
+                404: {'model': ErrorResponse}
+            }
+            )
+async def get_all_images():
+    """Получение списка всех загруженных изображений"""
+
+    session: AsyncSession = await db_helper.get_session()
+
+    async with session:
+        result = await session.execute(select(Image))
+        images = result.scalars().all()
+
+        if not images:
+            raise HTTPException(status_code=404,
+                                detail='Ничего не найдено')
+
+        return images

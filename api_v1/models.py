@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, \
     declared_attr
@@ -16,6 +16,6 @@ class Base(DeclarativeBase):
 class Image(Base):
     title: Mapped[str]
     path: Mapped[str]
-    uploaded_at: Mapped[date]
+    uploaded_at: Mapped[datetime]
     resolution: Mapped[str]
     size: Mapped[int]
