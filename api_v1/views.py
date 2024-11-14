@@ -2,19 +2,29 @@ import os
 import shutil
 from datetime import datetime
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, UploadFile, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api_v1.models import Image
-from api_v1.utils import get_unique_filename, resize_image
+from api_v1.schemas import ImageResponse, ErrorResponse
+from api_v1.utils import get_unique_filename, resize_image, \
+    get_image_resolution, is_image
 from core.database import db_helper
 
 router = APIRouter(prefix="/images")
 
 
-@router.post("/upload/")
+@router.post("/upload/",
+             responses={
+                 200: {'model': ImageResponse},
+                 400: {'model': ErrorResponse}
+             }
+)
 async def upload_image(image: UploadFile = File(...)):
     """Загрузка изображения"""
+
+    if not is_image(image):
+        raise HTTPException(status_code=400, detail="Invalid image format")
 
     img_dir = 'uploaded_images'
     os.makedirs(img_dir, exist_ok=True)
@@ -34,7 +44,7 @@ async def upload_image(image: UploadFile = File(...)):
         title=image.filename,
         path=img_path,
         uploaded_at=datetime.now(),
-        resolution='100x100',
+        resolution=get_image_resolution(img_path),
         size=os.path.getsize(img_path)
     )
     async with session:
